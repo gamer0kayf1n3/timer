@@ -1,1 +1,144 @@
+<html>
+    <body>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
+            * {font-family: 'Lilita One', sans-serif;}
+            #time-parent {
+                text-align: center;
+                width: 100%;
+            }
+            #time-parent #time {
+                font-size: 240pt;
+            }
+            #time-parent p {
+                margin: 0 0;
+                font-size: 20pt;
+            }
+        </style>
+        <div id="time-parent">
+            <p id="time"></p>
+            <p>Interpreted: <span id="y"></span></p>
+            <p><span id="inp"></span></p>
+        </div>
+        
+        <input type="text" name="sec" id="sec" style="position: absolute; top: -9999px; left: -9999px;">
+        
+        <script>
+            tim = document.getElementById("time")
+            sec = document.getElementById("sec")
+            val = 0
+            prev = ""
+            sec.addEventListener("input", (e) => {
+                if (!allowed(sec.value)) {
+                    console.log("That character is not allowed.")
+                    sec.value = prev
+                }
+                if (sec.value.includes("x")) {
+                    sec.value = "";
+                    document.getElementById("y").innerText = "";
+                }
+                val = parseTime(sec.value);
+                document.getElementById("inp").innerText = sec.value;
+                document.getElementById("y").innerText = convertSecondsToTime(val);
+                prev = sec.value
+            });  
+            function lop () {
+                orig = new Date()
+                d = new Date(orig.getTime() + val*1000)
+                tim.innerHTML = formatDateToTime(d)
+                requestAnimationFrame(lop)
+            }     
+            function isNumeric(str) {
+                if (typeof str != "string") return false;
+                return !isNaN(str) && !isNaN(parseFloat(str));
+            }    
+            function parseTime(timeStr) {
+                if (isNumeric(timeStr)) {
+                    return parseInt(timeStr);
+                }
+      
+                const regex = /(\d+d)?(\d+h)?(\d+m)?(\d+s)?/g;
+                const matches = [...timeStr.matchAll(regex)];
 
+                let totalSeconds = 0;
+
+                if (matches) {
+                    matches.forEach((match) => {
+                        const [, days, hours, minutes, seconds] = match;
+                        const d = parseInt(days) || 0;
+                        const h = parseInt(hours) || 0;
+                        const m = parseInt(minutes) || 0;
+                        const s = parseInt(seconds) || 0;
+
+                        totalSeconds += d * 86400 + h * 3600 + m * 60 + s;
+                    });
+                }
+
+                return parseInt(totalSeconds);
+            }        
+            function convertSecondsToTime(seconds) {
+                const days = Math.floor(seconds / 86400);
+                seconds %= 86400;
+                const hours = Math.floor(seconds / 3600);
+                seconds %= 3600;
+                const minutes = Math.floor(seconds / 60);
+                seconds %= 60;
+
+                let timeStr = '';
+                if (days > 0) {
+                    timeStr += `${days}d`;
+                }
+                if (hours > 0) {
+                    timeStr += `${hours}h`;
+                }
+                if (minutes > 0) {
+                    timeStr += `${minutes}m`;
+                }
+                if (seconds > 0) {
+                    timeStr += `${seconds}s`;
+                }
+
+                return timeStr;
+            }
+            function allowed(input) {
+                charn1 = input.charAt(input.length - 1)
+                if (!"1234567890dhmsx".includes(charn1)) {
+                    console.log("That character is not allowed.")
+                    return false;
+                }
+                charn2 = input.charAt(input.length - 2)
+                if (/^[a-zA-Z]$/.test(charn1) && /^[a-zA-Z]$/.test(charn2)) {
+                    console.log("Consecutive non-numerical characters are not allowed.");
+                    return false;
+                }
+                return true;
+                
+            }
+            function formatDateToTime(date) {
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                
+                return `${hours}:${minutes}:${seconds}`;
+            }
+            
+            // force focus
+            sec.style.visibility = 'visible';
+            sec.focus();
+            sec.addEventListener('blur', () => {
+                sec.focus();
+            });
+            lop()
+            sec.addEventListener("keydown", function(event) {
+            if (event.key === "Enter" || event.keyCode === 13) {
+                sec.value = ""
+                console.log("enter was pressed")
+            }
+        });
+        </script>
+        <script
+        src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+    </body>
+</html>
