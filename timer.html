@@ -3,49 +3,104 @@
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
             * {font-family: 'Lilita One', sans-serif;}
-            #time-parent {
+            #time-parent, #timer-parent {
                 text-align: center;
                 width: 100%;
+                position: absolute;
             }
-            #time-parent #time {
+            #time-parent #time, #time-parent #timer {
                 font-size: 240pt;
             }
-            #time-parent p {
+            #time-parent p, #timer-parent p {
                 margin: 0 0;
                 font-size: 20pt;
             }
+            #willRingAt {
+                font-size: 50pt;
+            }
+            .otherElements {
+                display: none;
+            }
+            #willRingAtString {
+                font-size:10pt;
+            }
+            .notification-container {
+                position: fixed;
+                bottom: 0;
+                right: 0;
+                overflow: hidden;
+            }
+
+            .notification {
+                background-color: #4CAF50;
+                color: white;
+                padding: 15px;
+                margin: 10px;
+                border-radius: 5px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+                transition: transform 0.5s, opacity 0.5s;
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            .notification.show {
+                transform: translateX(0);
+                opacity: 1;
+                transition: transform 0.5s, opacity 0.5s;
+            }
+
+            .notification.hide {
+                opacity: 0;
+                transition: opacity 0.5s;
+            }
+
         </style>
         <div id="time-parent">
             <p id="time"></p>
+            <p class="otherElements"><span id="willRingAt"></span><br><span id="willRingAtString">Will ring at</span></p>
+            <p class="otherElements">Interpreted: <span id="y"></span></p>
+            <p class="otherElements"><span id="inp"></span></p>
+        </div>
+        <div id="timer-parent" style="display: none;">
+            <p id="timer"></p>
             <p>Interpreted: <span id="y"></span></p>
             <p><span id="inp"></span></p>
         </div>
         
         <input type="text" name="sec" id="sec" style="position: absolute; top: -9999px; left: -9999px;">
-        
+        <div class="notification-container" id="notification-container"></div>
         <script>
+            
+            previousState = "time"
+            currentState = "time"
             tim = document.getElementById("time")
+            willRingAt = document.getElementById("willRingAt")
             sec = document.getElementById("sec")
             val = 0
             prev = ""
             sec.addEventListener("input", (e) => {
-                if (!allowed(sec.value)) {
-                    console.log("That character is not allowed.")
-                    sec.value = prev
-                }
                 if (sec.value.includes("x")) {
                     sec.value = "";
                     document.getElementById("y").innerText = "";
+                }
+                if (!allowed(sec.value)) {
+                    sec.value = prev
                 }
                 val = parseTime(sec.value);
                 document.getElementById("inp").innerText = sec.value;
                 document.getElementById("y").innerText = convertSecondsToTime(val);
                 prev = sec.value
+                if (sec.value != "") {
+                    $(".otherElements").fadeIn(100);
+                } else {
+                    $(".otherElements").fadeOut(100);
+                }
             });  
             function lop () {
                 orig = new Date()
                 d = new Date(orig.getTime() + val*1000)
-                tim.innerHTML = formatDateToTime(d)
+                willRingAt.innerHTML = formatDateToTime(d)
+                tim.innerHTML = formatDateToTime(orig)
                 requestAnimationFrame(lop)
             }     
             function isNumeric(str) {
@@ -103,12 +158,12 @@
             function allowed(input) {
                 charn1 = input.charAt(input.length - 1)
                 if (!"1234567890dhmsx".includes(charn1)) {
-                    console.log("That character is not allowed.")
+                    logger("That character is not allowed.")
                     return false;
                 }
                 charn2 = input.charAt(input.length - 2)
                 if (/^[a-zA-Z]$/.test(charn1) && /^[a-zA-Z]$/.test(charn2)) {
-                    console.log("Consecutive non-numerical characters are not allowed.");
+                    logger("Consecutive non-numerical characters are not allowed.");
                     return false;
                 }
                 return true;
@@ -129,12 +184,68 @@
                 sec.focus();
             });
             lop()
+            let enterPressed = false;
+
             sec.addEventListener("keydown", function(event) {
-            if (event.key === "Enter" || event.keyCode === 13) {
-                sec.value = ""
-                console.log("enter was pressed")
+                if (event.key === "Enter" || event.keyCode === 13) {
+                    enterPressed = true;  // Set the flag to true when the Enter key is initially pressed
+                }
+            });
+
+            sec.addEventListener("keyup", function(event) {
+                if (enterPressed) {
+                    enterPressed = false;  // Reset the flag when the Enter key is released
+                    sec.value = "";
+
+                    if (currentState === "time") {
+                        if (val == 0) {
+                            logger("Cannot change to timer; timer not specified")
+                            return
+                        }
+                        val = 0
+                        logger("changing to timer");
+                        currentState = "timer";
+                        $("#timer-parent").fadeIn(100);
+                        $("#time-parent").fadeOut(100);
+                    } else if (currentState === "timer") {
+                        timeSave = new Date();
+                        logger("changing to time");
+                        currentState = "time";
+                        $("#time-parent").fadeIn(100);
+                        $("#timer-parent").fadeOut(100);
+                    }
+                }
+            });
+
+            const notificationContainer = document.getElementById('notification-container');
+
+            function createNotification(message) {
+                const notification = document.createElement('div');
+                notification.classList.add('notification');
+                notification.innerText = message;
+
+                notificationContainer.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.classList.add('hide');
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 500);
+                }, 5000);
+
+                // Move up existing notifications
+                document.querySelectorAll('.notification.show').forEach((existingNotification) => {
+                    existingNotification.style.transform = 'translateY(-70px)';
+                });
+
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 100);
             }
-        });
+            function logger(log) {
+                console.log(log);
+                createNotification(log);
+            }
         </script>
         <script
         src="https://code.jquery.com/jquery-3.7.1.min.js"
