@@ -202,12 +202,14 @@
                             logger("Cannot change to timer; timer not specified")
                             return
                         }
-                        val = 0
+                        
                         logger("changing to timer");
                         currentState = "timer";
                         $("#timer-parent").fadeIn(100);
                         $("#time-parent").fadeOut(100);
+                        $(".otherElements").fadeOut(100);
                     } else if (currentState === "timer") {
+                        val = 0
                         timeSave = new Date();
                         logger("changing to time");
                         currentState = "time";
